@@ -1,0 +1,109 @@
+name: Publish
+description: Build and publish release artifacts
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to publish (must already exist)
+        required: false
+        type: string
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+
+    env:
+      CARGO_TERM_COLOR: always
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: star-trader-linux-x86_64
+            archive: tar
+            exe_suffix: ""
+          - os: macos-15
+            artifact: star-trader-macos-arm64
+            archive: tar
+            exe_suffix: ""
+          - os: windows-latest
+            artifact: star-trader-windows-x86_64
+            archive: zip
+            exe_suffix: .exe
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || github.ref }}
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+
+      - name: Build Release Binary
+        run: cargo build -p star-trader --release
+
+      - name: Package Artifact (tar.gz)
+        if: matrix.archive == 'tar'
+        shell: bash
+        run: |
+          mkdir -p dist
+          bin="target/release/star-trader${{ matrix.exe_suffix }}"
+          cp "$bin" dist/star-trader
+          tar -czf "dist/${{ matrix.artifact }}.tar.gz" -C dist star-trader
+          rm dist/star-trader
+
+      - name: Package Artifact (zip)
+        if: matrix.archive == 'zip'
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp "target/release/star-trader${{ matrix.exe_suffix }}" dist/star-trader${{ matrix.exe_suffix }}
+          (cd dist && zip "${{ matrix.artifact }}.zip" star-trader${{ matrix.exe_suffix }})
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}.*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+    
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: star-trader-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || github.ref_name }}
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

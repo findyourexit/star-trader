@@ -1,0 +1,21 @@
+[package]
+name = "star-trader"
+version = "0.1.0"
+edition = "2024"
+description = "Star Trader (1974) - a Rust remake of the classic, with a ratatui TUI"
+authors = ["Tom Larcher <tom.larcher@gmail.com>"]
+license = "MIT"
+
+[dependencies]
+anyhow = "1"
+crossterm = "0.29"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
+rand = { version = "0.8", features = ["serde1"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand_chacha = { version = "0.3", features = ["serde1"] }
+log = "0.4"
+env_logger = "0.11"
+
+[dev-dependencies]
+pretty_assertions = "1"
