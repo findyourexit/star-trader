@@ -271,8 +271,9 @@ pub enum Overlay {
     Help,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum Screen {
+    #[default]
     Launch,
     Menu,
     Game,
@@ -283,12 +284,6 @@ pub enum Screen {
 impl Screen {
     fn game() -> Self {
         Screen::Game
-    }
-}
-
-impl Default for Screen {
-    fn default() -> Self {
-        Screen::Launch
     }
 }
 
@@ -482,8 +477,10 @@ impl App {
     pub fn boot() -> Self {
         let (keybinds, kb_notice) = KeyBindings::load(KEYBINDS_PATH);
 
-        let mut app = App::default();
-        app.keybinds = keybinds;
+        let mut app = App {
+            keybinds,
+            ..App::default()
+        };
 
         if Path::new(SAVE_PATH).exists() {
             app.status = "Main menu - save found; choose Load Game to resume.".to_string();
