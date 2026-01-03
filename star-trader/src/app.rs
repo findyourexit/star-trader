@@ -721,8 +721,7 @@ impl App {
     pub fn tick(&mut self) {
         self.ticks = self.ticks.saturating_add(1);
 
-        if self.screen == Screen::Launch
-            && self.launch_started.elapsed() >= LAUNCH_SCREEN_DURATION
+        if self.screen == Screen::Launch && self.launch_started.elapsed() >= LAUNCH_SCREEN_DURATION
         {
             self.finish_launch();
         }

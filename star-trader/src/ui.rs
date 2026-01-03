@@ -147,13 +147,7 @@ fn render_launch_screen(frame: &mut Frame, app: &App) {
     let footer_lines = footer_lines_needed(size.width, &key_hints);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Min(0),
-                Constraint::Length(footer_lines),
-            ]
-            .as_ref(),
-        )
+        .constraints([Constraint::Min(0), Constraint::Length(footer_lines)].as_ref())
         .split(size);
 
     let body_sections = Layout::default()
